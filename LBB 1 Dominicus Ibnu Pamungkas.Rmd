@@ -1,0 +1,343 @@
+---
+title: "Exploratory Data Analysis - Retail Dataset"
+author: "DOM"
+date: "11/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+retail<-read.csv("data_input/retail.csv")
+#Read Data Retail
+```
+1 Explanation
+
+1.1 Brief
+
+Hi !! Welcome to my Rmd :)
+in this LBB i will use previous data which is Retail.csv
+I hope you enjoy it !
+
+2 Input Data
+
+```{r}
+Retail <- read.csv("data_input/retail.csv")
+```
+Input data is DONE ! then let’s get started
+
+2.1 Data Inspection
+
+```{r}
+head(Retail)
+```
+
+```{r}
+tail(Retail)
+```
+```{r}
+dim(Retail)
+```
+```{r}
+names(Retail)
+```
+From our inspection we can conclude :
+
+* Retail data contain 9994 of rows and 15 of coloumns
+
+
+* Each of column name : “Row.ID”, “Order.ID”, “Order.Date”, “Ship.Date”, “Ship.Mode”, “Customer.ID”, “Segment”,“Product.ID”, “Category”, “Sub.Category”, “Product.Name”, “Sales”, “Quantity”, “Discount”, “Profit”
+
+
+2.2 Data Cleansing & Coertions
+
+```{r}
+str(Retail)
+```
+
+From this result, we find some of data type not in the corect type. we need to convert it into corect type (data coertion)
+```{r}
+Retail$Row.ID <- as.character(Retail$Row.ID)
+Retail$Order.ID <- as.character(Retail$Order.ID)
+Retail$Order.Date <- as.character(Retail$Order.Date,"%m/%d/%y")
+Retail$Ship.Date <- as.character(Retail$Ship.Date,"%m/%d/%y")
+Retail$Customer.ID <- as.character(Retail$Customer.ID)
+Retail$Product.ID <- as.character(Retail$Product.ID)
+Retail$Product.Name <- as.character(Retail$Product.Name)
+
+str(Retail)
+```
+Each of column already changed into desired data type
+
+
+Cek for missing value
+
+```{r}
+colSums(is.na(Retail))
+```
+
+```{r}
+anyNA(Retail)
+```
+Great!! No missing value
+
+
+
+Do subset do delete some column (1&2 because we dont need the informations). then save it into ‘Elips’ variable
+
+```{r}
+rtail<- Retail[,c(3:15)]
+head(rtail)
+```
+Now, rtail dataset is ready to be processed and analyzed
+
+3 Data Explanation
+
+Brief explanation
+
+```{r}
+summary(rtail)
+```
+
+Summary :
+
+1. First order occured in Jan 2014
+
+2. Standart Class was the most popular one for shipping option and Same day delivery was the lowest one
+
+3. PT. Elips has the most buyers coming from cunsumer segment and home office segment was the lowest
+
+4. Office Supply category was the best seller compare to others
+
+5. In Sub category, Other stuff was the most favourite one then followed by Binders and paper. Art is the lowest
+
+6. PT. Elips gained the average sales at 229.858; with max sales value at 22638.480 and minumum sales value at 0.444
+
+7. Max quantity order was 14 within 4 years but average at 3.79
+
+8. PT. Elips max amount of discount was 80%, but mean number of discount around 15%
+
+9. PT. Elips ever had loss at 6599 and gained 8399 as their profit with average profit at 28.657
+
+
+Check the Outlier within profit
+
+
+```{r}
+aggregate(Profit~Segment, rtail,mean)
+```
+```{r}
+aggregate(Profit~Segment, rtail,var)
+```
+```{r}
+aggregate(Profit~Segment, rtail,sd)
+```
+```{r}
+boxplot(rtail$Profit)
+```
+
+
+From result above, we find posibilities for the outliers, but from our calculation, Sd value is around 200 ( my oppinion its still be tolerated), so the process may continue
+
+
+
+4 Data Manipulation & Transformation
+
+  1. Which category gives the lowest sales number? how much profit?
+
+```{r}
+rtail [rtail$Sales==0.444,]
+```
+
+Answer : Sales 0.444 comes from segment ‘consumer’, office supplies, and got loss 1.11
+  
+  2. Which segment buying the most office suppies?
+  
+```{r}
+os <- rtail [rtail$Category=="Office Supplies",]
+round(prop.table(table(os$Segment))*100,2)
+```
+Answer : consumer segment –> 51.89%
+
+  3. How many times buyers get the highest discount 80% and when it happened?
+  
+```{r}
+dis <- rtail [rtail$Discount==0.8,]
+(sort(table(dis$Order.Date),decreasing = T)[1])
+```
+Answer : 80% discount was on July 2014, happened 4 times
+
+  4. Related to number 3, who was the buyers?
+  
+```{r}
+dis2 <- dis[dis$Order.Date=="2014-07-26",]
+(table(dis$Segment))
+```
+
+Answer : all buyer was coming from consumer segment
+
+  5. How much total of quantity order from each segment and category, and which is the highest?
+  
+```{r}
+xtabs(Quantity~Segment+Category,rtail)
+```
+
+```{r}
+plot(xtabs(Quantity~Segment+Category,rtail))
+```
+
+
+```{r}
+heatmap(xtabs(Quantity~Segment+Category,rtail),cexRow = 0.8,cexCol = 0.8, scale = "column", Colv = NA, Rowv = NA)
+```
+Answer : Based on result above: segmen consumer with category office supply make the highest quantity order with sum 11758
+
+
+  6. Median of quantity for every segment and category?
+  
+```{r}
+aggregate(Quantity~Segment+Category,rtail,median)
+```
+Answer : Median of quantity = 3
+
+  7. How much Total quantity order since PT. Elips start selling the product?
+  
+```{r}
+sum(rtail$Quantity)
+```
+
+Answer : 37873 items
+
+  8. How much profit in 4 years?
+  
+```{r}
+sum(rtail$Profit)
+```
+
+Answer : 286397
+
+  9. Discount Percentage (0%) (0-20%) (>20%)
+  
+```{r}
+nol<- rtail[rtail$Discount==0,]
+knitr::kable(table(nol$Discount))
+```
+```{r}
+more0<- rtail[rtail$Discount>0 & rtail$Discount<=0.8,]
+knitr::kable(table(more0$Discount))
+```
+Answer : based on this data, half ammount of data was seeling without any discount given
+
+  10. Category which generate the highest profit?
+  
+```{r}
+xtabs(Profit~Category, rtail)
+```
+
+Answer : Technology
+
+  11. Highest Loss in which transaction?
+  
+```{r}
+rtail[rtail$Profit==-6599.978,]
+```
+  
+Answer : happened in 2016, was selling 5 items of machines, discount 70%
+
+  12. Highest Profit in Segment?
+  
+```{r}
+xtabs(Profit~Segment,rtail)
+```
+Answer : Consumer was given the higest profit compare to other segment
+
+  13. Sales number based on category ?
+  
+```{r}
+xtabs(Sales~Category,rtail)
+```
+Answer : Technology have the highest selling price compare to other
+
+
+  14. Profit based on Ship Mode + segment?
+  
+```{r}
+xtabs(Profit~Segment+Ship.Mode,rtail)
+```
+
+```{r}
+plot(xtabs(Profit~Segment+Ship.Mode,rtail))
+```
+Answer : Most of buyer was choosing Standar Class for shipping options. Among them consumer was the higest one
+
+  15. The highest quantity seller based on Category
+  
+```{r}
+xtabs(Quantity~Category,rtail)
+```
+Answer : Office Supply
+
+
+5 Explanatory Text & Business Recomendation
+
+n 4 years, since bigining of 2014-2017 PT. Elips have sold total 37873 items with total profit 286397. This company selling 3 main category : Furniture, Office supplies and Technology. From this category, ‘Technology’ generate the highest profit with value 145454.95 compare to others but ironically, Highest loss with ammount 6599.987 happened in 2016 was coming from ‘Technology’ category as well. Apart from that, Technology categoru has the highest selling price.
+
+
+Buyer who buying the product was coming from different segment, such as : Consumer, Corporate and Home Office. ‘Consumer’ was giving the higest ammount of profit compare to other with 134119.21. Shipping option consist of 4 types : First Class, Same day, Second class, and Standart class. Based on data, from all segment, most of them are choosing Standart Class as their shipping option. Consumer segment is the most highest segment who choosing Standart class mode.
+
+
+Recomendations :
+
+1. From our calculation above, showing that Technology was selling with highest sales value but contradictory max loss was coming from       Technology section as well. This is caused because discound given was too hight (80%) without think about the provit.Consider it, No discount given without making some profit!! Calculate twice before deciding how many percentage of discount would be given
+
+
+2. Need to increase market target at Corporate segment and home office segment, we may give them more discount with taking back the profit to company
+
+
+3. Make sure all category was safely supplied on the wareshouse specially for ffice supply items.Based on our calculation, buyers mostly buyed office supply category with 22906, it almost 2-3 times higer from other category
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
